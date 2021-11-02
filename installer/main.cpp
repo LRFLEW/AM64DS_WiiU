@@ -6,6 +6,7 @@
 #include <coreinit/thread.h>
 #include <coreinit/time.h>
 
+#include "controls.hpp"
 #include "hachi_patch.hpp"
 #include "iosufsa.hpp"
 #include "log.hpp"
@@ -17,7 +18,6 @@
 #include "screen.hpp"
 #include "title.hpp"
 #include "util.hpp"
-#include "vpad.hpp"
 #include "zlib.hpp"
 
 using namespace std::string_view_literals;
@@ -113,7 +113,7 @@ namespace {
 int main(int argc, char **argv) {
     WUProc proc;
     Screen screen;
-    Vpad vpad;
+    Controls controls;
     LOGINIT();
 
     std::vector<Title> titles;
@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
     bool full = false;
 
     {
-        WUHomeLock home_lock(proc, vpad);
+        WUHomeLock home_lock(proc, controls);
         Messages::scanning(screen, full);
 
         titles = Title::get_titles();
@@ -147,21 +147,21 @@ int main(int argc, char **argv) {
 
         switch (state) {
             case ControlState::SELECT:
-                switch (vpad.get()) {
-                    case Vpad::Input::A:
+                switch (controls.get()) {
+                    case Controls::Input::A:
                         if (selected < filtered.size())
                             Messages::confirm(screen, filtered[selected], proc.is_hbl());
                         else if (!full)
                             Messages::full_warn(screen, proc.is_hbl());
                         state = ControlState::CONFIRM;
                         break;
-                    case Vpad::Input::Up:
+                    case Controls::Input::Up:
                         if (selected > 0) {
                             Messages::select(screen, filtered, --selected,
                                              full, haxchi, proc.is_hbl());
                         }
                         break;
-                    case Vpad::Input::Down:
+                    case Controls::Input::Down:
                         if (selected < (filtered.size() + !full) - 1) {
                             Messages::select(screen, filtered, ++selected,
                                              full, haxchi, proc.is_hbl());
@@ -172,17 +172,17 @@ int main(int argc, char **argv) {
                 }
                 break;
             case ControlState::CONFIRM:
-                switch (vpad.get()) {
-                    case Vpad::Input::A:
+                switch (controls.get()) {
+                    case Controls::Input::A:
                         if (selected < filtered.size()) {
-                            WUHomeLock home_lock(proc, vpad);
+                            WUHomeLock home_lock(proc, controls);
                             proc.flag_dirty();
                             patch_title(screen, filtered[selected]);
                             filtered = scan_titles(titles, full);
                             Messages::post_patch(screen);
                             state = ControlState::CLEAR;
                         } else {
-                            WUHomeLock home_lock(proc, vpad);
+                            WUHomeLock home_lock(proc, controls);
                             full = true;
                             Messages::scanning(screen, full);
                             filtered = scan_titles(titles, full);
@@ -192,7 +192,7 @@ int main(int argc, char **argv) {
                             state = ControlState::SELECT;
                         }
                         break;
-                    case Vpad::Input::B:
+                    case Controls::Input::B:
                         Messages::select(screen, filtered, selected,
                                          full, haxchi, proc.is_hbl());
                         state = ControlState::SELECT;
@@ -202,8 +202,8 @@ int main(int argc, char **argv) {
                 }
                 break;
             case ControlState::CLEAR:
-                switch (vpad.get()) {
-                    case Vpad::Input::B:
+                switch (controls.get()) {
+                    case Controls::Input::B:
                         Messages::select(screen, filtered, (selected = 0),
                                          full, haxchi, proc.is_hbl());
                         state = ControlState::SELECT;

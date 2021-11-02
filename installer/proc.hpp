@@ -1,7 +1,7 @@
 #ifndef PROC_HPP
 #define PROC_HPP
 
-#include "vpad.hpp"
+#include "controls.hpp"
 
 class WUProc {
 public:
@@ -28,12 +28,13 @@ private:
 
 class WUHomeLock {
 public:
-    WUHomeLock(WUProc &proc, Vpad &vpad) : proc(proc), vpad(vpad) { proc.block_home(); }
-    ~WUHomeLock() { proc.update(); proc.release_home(); vpad.get(); }
+    WUHomeLock(WUProc &proc, Controls &controls) :
+        proc(proc), controls(controls) { proc.block_home(); }
+    ~WUHomeLock() { proc.update(); proc.release_home(); controls.get(); }
 
 private:
     WUProc &proc;
-    Vpad &vpad;
+    Controls &controls;
 };
 
 #endif // PROC_HPP

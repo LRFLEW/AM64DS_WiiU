@@ -1,12 +1,12 @@
-#ifndef VPAD_HPP
-#define VPAD_HPP
+#ifndef CONTROLS_HPP
+#define CONTROLS_HPP
 
 #include <cstdint>
 
-class Vpad {
+class Controls {
 public:
-    Vpad();
-    ~Vpad();
+    Controls();
+    ~Controls();
 
     enum class Input : std::uint_fast8_t {
         None,
@@ -18,4 +18,4 @@ public:
     Input get() const;
 };
 
-#endif // VPAD_HPP
+#endif // CONTROLS_HPP
