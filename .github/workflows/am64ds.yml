@@ -16,3 +16,18 @@ jobs:
         with:
           name: AM64DS
           path: am64ds.zip
+  build-debug:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkitppc:20210726
+    steps:
+      - name: Checkout AM64DS
+        uses: actions/checkout@v2
+      - name: Build
+        run: make DEBUG_LOG=1
+      - name: Package
+        run: make package
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: AM64DS-Debug
+          path: am64ds.zip
