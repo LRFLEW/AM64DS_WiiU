@@ -14,5 +14,5 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
         with:
-          name: AM64DS ZIP
+          name: AM64DS
           path: am64ds.zip
