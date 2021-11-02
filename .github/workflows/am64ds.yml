@@ -10,11 +10,11 @@ jobs:
       - name: Build
         run: make
   build-latest:
-    continue-on-error: true
     runs-on: ubuntu-latest
     container: devkitpro/devkitppc:latest
     steps:
       - name: Update devkitPRO
+        continue-on-error: true
         run: dkp-pacman -Syyu --noconfirm
       - name: Checkout AM64DS
         uses: actions/checkout@v2

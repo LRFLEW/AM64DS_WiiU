@@ -27,8 +27,8 @@ namespace util {
         // Big Endian
         return (static_cast<std::uint32_t>(magic[0]) << 24) |
                (static_cast<std::uint32_t>(magic[1]) << 16) |
-                  (static_cast<std::uint32_t>(magic[2]) <<  8) |
-                  (static_cast<std::uint32_t>(magic[3]));
+               (static_cast<std::uint32_t>(magic[2]) <<  8) |
+               (static_cast<std::uint32_t>(magic[3]));
     }
 
     template<typename T>
