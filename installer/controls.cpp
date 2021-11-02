@@ -5,8 +5,6 @@
 
 #include <vpad/input.h>
 
-#include "log.hpp"
-
 extern "C" void KPADShutdown();
 
 namespace {
@@ -32,8 +30,6 @@ Controls::Input Controls::get() const {
     vcount = VPADRead(VPAD_CHAN_0, &vpad, 1, &verr);
     for (int chan = 0; chan < KMAX; ++chan)
         kcount[chan] = KPADReadEx(KPADChan(chan), &kpad[chan], 1, &kerr[chan]);
-    LOG("VPAD %d, KPAD0 %d, KPAD1 %d, KPAD2 %d, KPAD3 %d",
-        vcount, kcount[0], kcount[1], kcount[2], kcount[3]);
 
     if (vcount == 1 && verr == VPAD_READ_SUCCESS) {
         if (vpad.trigger & VPAD_BUTTON_A) return Controls::Input::A;
@@ -51,7 +47,6 @@ Controls::Input Controls::get() const {
             if (pad.trigger & WPAD_BUTTON_B) return Controls::Input::B;
             if (pad.trigger & WPAD_BUTTON_UP) return Controls::Input::Up;
             if (pad.trigger & WPAD_BUTTON_DOWN) return Controls::Input::Down;
-            LOG("KPAD ext %d", pad.extensionType);
             switch (pad.extensionType) {
                 case WPAD_EXT_NUNCHUK:
                 case WPAD_EXT_MPLUS_NUNCHUK:
