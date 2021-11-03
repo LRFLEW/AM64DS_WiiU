@@ -3,7 +3,7 @@ on: [push, pull_request]
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: devkitpro/devkitppc:20210726
+    container: ghcr.io/lrflew/devkitppc:20211103
     steps:
       - name: Checkout AM64DS
         uses: actions/checkout@v2
