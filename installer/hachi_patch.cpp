@@ -12,7 +12,7 @@
 
 #include <elf.h>
 
-#include "error.hpp"
+#include "exception.hpp"
 #include "iosufsa.hpp"
 #include "log.hpp"
 #include "util.hpp"
@@ -130,18 +130,18 @@ namespace {
         virtual void Read() override {
             LOG("Open RPX");
             IOSUFSA::File rpx(fsa);
-            if (!rpx.open(path, "rb")) handle_error("RPX: Read FileOpen");
+            if (!rpx.open(path, "rb")) throw error("RPX: Read FileOpen");
 
             LOG("Read Header");
-            if (!rpx.readall(&ehdr, sizeof(ehdr))) handle_error("RPX: Read Header");
-            if (!util::memequal(ehdr, expected_ehdr)) handle_error("RPX: Invalid Header");
+            if (!rpx.readall(&ehdr, sizeof(ehdr))) throw error("RPX: Read Header");
+            if (!util::memequal(ehdr, expected_ehdr)) throw error("RPX: Invalid Header");
 
             LOG("Read Sections Table");
             shdr.resize(ehdr.e_shnum);
             LOG("Read Sections Table - seek %X", ehdr.e_shoff);
-            if (!rpx.seek(ehdr.e_shoff)) handle_error("RPX: Seek Sections");
+            if (!rpx.seek(ehdr.e_shoff)) throw error("RPX: Seek Sections");
             LOG("Read Sections Table - read");
-            if (!rpx.readall(shdr)) handle_error("RPX: Read Sections");
+            if (!rpx.readall(shdr)) throw error("RPX: Read Sections");
             LOG("Read Sections Table - done");
 
             LOG("Get Sorted Sections");
@@ -154,20 +154,20 @@ namespace {
                       [this](std::size_t a, std::size_t b) -> bool
                       { return shdr[a].sh_offset < shdr[b].sh_offset; });
             LOG("Validate Sorted Sections");
-            if (!good_layout(shdr, sorted_sects)) handle_error("RPX: Bad Layout");
+            if (!good_layout(shdr, sorted_sects)) throw error("RPX: Bad Layout");
 
             sections.resize(ehdr.e_shnum);
             for (std::size_t i : sorted_sects) {
                 if (shdr[i].sh_size > 0) {
                     LOG("Read Section %d", i);
                     sections[i].resize(shdr[i].sh_size);
-                    if (!rpx.seek(shdr[i].sh_offset)) handle_error("RPX: Seek Sect");
-                    if (!rpx.readall(sections[i])) handle_error("RPX: Read Sect");
+                    if (!rpx.seek(shdr[i].sh_offset)) throw error("RPX: Seek Sect");
+                    if (!rpx.readall(sections[i])) throw error("RPX: Read Sect");
                 }
             }
 
             LOG("Close RPX");
-            if (!rpx.close()) handle_error("RPX: Read CloseFile");
+            if (!rpx.close()) throw error("RPX: Read CloseFile");
         }
 
         virtual void Modify() override {
@@ -175,7 +175,7 @@ namespace {
             std::vector<std::uint8_t> &text = sections[2];
 
             LOG("Decompress Text");
-            if (!decompress_sect(text_hdr, text)) handle_error("RPX: Decompress Text");
+            if (!decompress_sect(text_hdr, text)) throw error("RPX: Decompress Text");
 
             LOG("Patch Loaded Text");
             make_u16(text, 0x006CEA, 0x6710);
@@ -194,7 +194,7 @@ namespace {
             reinterpret_cast<std::uint32_t *>(sections[27].data())[2] = crc;
 
             LOG("Compress Text");
-            if (!compress_sect(text_hdr, text)) handle_error("RPX: Compress Text");
+            if (!compress_sect(text_hdr, text)) throw error("RPX: Compress Text");
 
             LOG("Shift for Resize");
             shift_for_resize(2, shdr, sorted_sects);
@@ -203,18 +203,18 @@ namespace {
         virtual void Write() override {
             LOG("Open RPX Write");
             IOSUFSA::File rpx(fsa);
-            if (!rpx.open(path, "wb"))  handle_error("RPX: Write FileOpen");
+            if (!rpx.open(path, "wb"))  throw error("RPX: Write FileOpen");
 
             LOG("Write Header");
-            if (!rpx.writeall(&ehdr, sizeof(ehdr))) handle_error("RPX: Write Header");
+            if (!rpx.writeall(&ehdr, sizeof(ehdr))) throw error("RPX: Write Header");
 
             LOG("Write Pad");
-            if (!rpx.writeall(&magic_amds, sizeof(magic_amds))) handle_error("RPX: Write Magic");
+            if (!rpx.writeall(&magic_amds, sizeof(magic_amds))) throw error("RPX: Write Magic");
             if (!rpx.writeall(zero_pad, ehdr.e_shoff - sizeof(ehdr) - sizeof(magic_amds)))
-                handle_error("RPX: Write ShPad");
+                throw error("RPX: Write ShPad");
 
             LOG("Write Section Table");
-            if (!rpx.writeall(shdr)) handle_error("RPX: Write Sections");
+            if (!rpx.writeall(shdr)) throw error("RPX: Write Sections");
 
             std::uint32_t last_off = 0x40 + sizeof(Elf32_Shdr) * shdr.size();
             for (std::size_t i : sorted_sects) {
@@ -222,15 +222,15 @@ namespace {
                     LOG("Write Section %d", i);
                     const Elf32_Shdr &sect = shdr[i];
                     if (!rpx.writeall(zero_pad, sect.sh_offset - last_off))
-                        handle_error("RPX: Write StPad");
-                    if (!rpx.writeall(sections[i])) handle_error("RPX: Write Sect");
+                        throw error("RPX: Write StPad");
+                    if (!rpx.writeall(sections[i])) throw error("RPX: Write Sect");
                     last_off = sect.sh_offset + sect.sh_size;
                 }
             }
-            if (!rpx.writeall(zero_pad, -last_off & 0x3F)) handle_error("RPX: Write FlPad");
+            if (!rpx.writeall(zero_pad, -last_off & 0x3F)) throw error("RPX: Write FlPad");
 
             LOG("Close RPX Write");
-            if (!rpx.close()) handle_error("RPX: Write FileClose");
+            if (!rpx.close()) throw error("RPX: Write FileClose");
         }
 
     private:

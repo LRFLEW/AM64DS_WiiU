@@ -109,7 +109,6 @@ namespace {
     }
 }
 
-//static int am64ds() {
 int main(int argc, char **argv) {
     WUProc proc;
     Screen screen;
@@ -122,97 +121,111 @@ int main(int argc, char **argv) {
     ControlState state = ControlState::SELECT;
     bool full = false;
 
-    {
-        WUHomeLock home_lock(proc, controls);
-        Messages::scanning(screen, full);
+    try {
+        {
+            WUHomeLock home_lock(proc, controls);
+            Messages::scanning(screen, full);
 
-        titles = Title::get_titles();
-        filtered = scan_titles(titles, full);
+            titles = Title::get_titles();
+            filtered = scan_titles(titles, full);
 
-        for (Title &title : filtered) {
-            LOG("FOUND: %s", title.get_path().c_str());
-            LOG("FOUND NAME: %s", title.get_name().c_str());
+            for (Title &title : filtered) {
+                LOG("FOUND: %s", title.get_path().c_str());
+                LOG("FOUND NAME: %s", title.get_name().c_str());
+            }
         }
-    }
 
-    bool haxchi = std::any_of(titles.begin(), titles.end(), [](const Title &title) -> bool {
-        return check_titleid(title) && title.get_status_raw() == Patch::Status::IS_HAXCHI;
-    });
+        bool haxchi = std::any_of(titles.begin(), titles.end(), [](const Title &title) -> bool {
+            return check_titleid(title) && title.get_status_raw() == Patch::Status::IS_HAXCHI;
+        });
 
-    Messages::select(screen, filtered, selected, full, haxchi, proc.is_hbl());
+        Messages::select(screen, filtered, selected, full, haxchi, proc.is_hbl());
 
-    LOG("Entering Proc Loop...");
-    while (proc.update()) {
-        OSSleepTicks(OSMillisecondsToTicks(25));
+        LOG("Entering Proc Loop...");
+        while (proc.update()) {
+            OSSleepTicks(OSMillisecondsToTicks(25));
 
-        switch (state) {
-            case ControlState::SELECT:
-                switch (controls.get()) {
-                    case Controls::Input::A:
-                        if (selected < filtered.size())
-                            Messages::confirm(screen, filtered[selected], proc.is_hbl());
-                        else if (!full)
-                            Messages::full_warn(screen, proc.is_hbl());
-                        state = ControlState::CONFIRM;
-                        break;
-                    case Controls::Input::Up:
-                        if (selected > 0) {
-                            Messages::select(screen, filtered, --selected,
-                                             full, haxchi, proc.is_hbl());
-                        }
-                        break;
-                    case Controls::Input::Down:
-                        if (selected < (filtered.size() + !full) - 1) {
-                            Messages::select(screen, filtered, ++selected,
-                                             full, haxchi, proc.is_hbl());
-                        }
-                        break;
-                    default:
-                        break;
-                }
-                break;
-            case ControlState::CONFIRM:
-                switch (controls.get()) {
-                    case Controls::Input::A:
-                        if (selected < filtered.size()) {
-                            WUHomeLock home_lock(proc, controls);
-                            proc.flag_dirty();
-                            patch_title(screen, filtered[selected]);
-                            filtered = scan_titles(titles, full);
-                            Messages::post_patch(screen);
-                            state = ControlState::CLEAR;
-                        } else {
-                            WUHomeLock home_lock(proc, controls);
-                            full = true;
-                            Messages::scanning(screen, full);
-                            filtered = scan_titles(titles, full);
-                            selected = 0;
+            switch (state) {
+                case ControlState::SELECT:
+                    switch (controls.get()) {
+                        case Controls::Input::A:
+                            if (selected < filtered.size())
+                                Messages::confirm(screen, filtered[selected], proc.is_hbl());
+                            else if (!full)
+                                Messages::full_warn(screen, proc.is_hbl());
+                            state = ControlState::CONFIRM;
+                            break;
+                        case Controls::Input::Up:
+                            if (selected > 0) {
+                                Messages::select(screen, filtered, --selected,
+                                                 full, haxchi, proc.is_hbl());
+                            }
+                            break;
+                        case Controls::Input::Down:
+                            if (selected < (filtered.size() + !full) - 1) {
+                                Messages::select(screen, filtered, ++selected,
+                                                 full, haxchi, proc.is_hbl());
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                case ControlState::CONFIRM:
+                    switch (controls.get()) {
+                        case Controls::Input::A:
+                            if (selected < filtered.size()) {
+                                WUHomeLock home_lock(proc, controls);
+                                proc.flag_dirty();
+                                patch_title(screen, filtered[selected]);
+                                filtered = scan_titles(titles, full);
+                                Messages::post_patch(screen);
+                                state = ControlState::CLEAR;
+                            } else {
+                                WUHomeLock home_lock(proc, controls);
+                                full = true;
+                                Messages::scanning(screen, full);
+                                filtered = scan_titles(titles, full);
+                                selected = 0;
+                                Messages::select(screen, filtered, selected,
+                                                 full, haxchi, proc.is_hbl());
+                                state = ControlState::SELECT;
+                            }
+                            break;
+                        case Controls::Input::B:
                             Messages::select(screen, filtered, selected,
                                              full, haxchi, proc.is_hbl());
                             state = ControlState::SELECT;
-                        }
-                        break;
-                    case Controls::Input::B:
-                        Messages::select(screen, filtered, selected,
-                                         full, haxchi, proc.is_hbl());
-                        state = ControlState::SELECT;
-                        break;
-                    default:
-                        break;
-                }
-                break;
-            case ControlState::CLEAR:
-                switch (controls.get()) {
-                    case Controls::Input::B:
-                        Messages::select(screen, filtered, (selected = 0),
-                                         full, haxchi, proc.is_hbl());
-                        state = ControlState::SELECT;
-                        break;
-                    default:
-                        break;
-                }
-                break;
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                case ControlState::CLEAR:
+                    switch (controls.get()) {
+                        case Controls::Input::B:
+                            Messages::select(screen, filtered, (selected = 0),
+                                             full, haxchi, proc.is_hbl());
+                            state = ControlState::SELECT;
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+            }
         }
+    } catch (error &e) {
+        LOG("Error: %s", e.what());
+        Messages::except(screen, e.what(), proc.is_hbl());
+        proc.release_home();
+        while (proc.update())
+            OSSleepTicks(OSMillisecondsToTicks(25));
+    } catch (IOSUFSA::no_iosuhax &e) {
+        LOG("IOSUHAX Not Running");
+        Messages::no_iosuhax(screen, proc.is_hbl());
+        proc.release_home();
+        while (proc.update())
+            OSSleepTicks(OSMillisecondsToTicks(25));
     }
 
     LOG("Exiting... good bye.");
@@ -220,14 +233,3 @@ int main(int argc, char **argv) {
     LOGFINISH();
     return 0;
 }
-
-/*
-// Decrease the stack pointer to work around weird IOSUHAX issues
-#pragma GCC push_options
-#pragma GCC optimize ("O0")
-int main(int argc, char **argv) {
-    std::uint8_t padding[0x100]; (void)padding;
-    return am64ds();
-}
-#pragma GCC pop_options
-*/

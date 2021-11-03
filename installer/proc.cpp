@@ -20,12 +20,9 @@ namespace {
     constexpr std::uint64_t MII_MAKER_JPN_TITLE_ID = 0x00050010'1004A000;
     constexpr std::uint64_t MII_MAKER_USA_TITLE_ID = 0x00050010'1004A100;
     constexpr std::uint64_t MII_MAKER_EUR_TITLE_ID = 0x00050010'1004A200;
-
-    WUProc *global_proc = nullptr;
 }
 
 WUProc::WUProc() {
-    global_proc = this;
     uint64_t titleID = OSGetTitleID();
     hbc = (titleID == HBL_TITLE_ID          ) || (titleID = MII_MAKER_JPN_TITLE_ID) ||
           (titleID == MII_MAKER_USA_TITLE_ID) || (titleID = MII_MAKER_EUR_TITLE_ID);
@@ -79,8 +76,4 @@ void WUProc::block_home() {
 void WUProc::release_home() {
     if (!hbc) OSEnableHomeButtonMenu(true);
     home = true;
-}
-
-WUProc &WUProc::get_global() noexcept {
-    return *global_proc;
 }

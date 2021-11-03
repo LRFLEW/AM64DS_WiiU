@@ -9,7 +9,7 @@
 
 #include <machine/endian.h>
 
-#include "error.hpp"
+#include "exception.hpp"
 #include "iosufsa.hpp"
 #include "log.hpp"
 #include "util.hpp"
@@ -133,39 +133,39 @@ namespace {
         virtual void Read() override {
             LOG("Open ZIP");
             IOSUFSA::File zip(fsa);
-            if (!zip.open(path, "rb")) handle_error("NTR: Read FileOpen");
+            if (!zip.open(path, "rb")) throw error("NTR: Read FileOpen");
 
             LOG("Read Local Header");
-            if (!zip.readall(&local, sizeof(local))) handle_error("NTR: Read Local");
-            if (local.signature != zip_local_magic) handle_error("NTR: Bad Local");
+            if (!zip.readall(&local, sizeof(local))) throw error("NTR: Read Local");
+            if (local.signature != zip_local_magic) throw error("NTR: Bad Local");
             if (bswap(local.method) != 0 && bswap(local.method) != 8)
-                handle_error("NTR: Bad Local");
+                throw error("NTR: Bad Local");
             local_name.resize(bswap(local.name_len));
-            if (!zip.readall(local_name)) handle_error("NTR: Read Local Name");
+            if (!zip.readall(local_name)) throw error("NTR: Read Local Name");
             local_extra.resize(bswap(local.extra_len));
-            if (!zip.readall(local_extra)) handle_error("NTR: Read Local Extra");
+            if (!zip.readall(local_extra)) throw error("NTR: Read Local Extra");
 
             LOG("Read NTR");
             data.resize(bswap(local.cmp_size));
-            if (!zip.readall(data)) handle_error("NTR: Read NTR");
+            if (!zip.readall(data)) throw error("NTR: Read NTR");
 
             LOG("Read Central");
-            if (!zip.readall(&central, sizeof(central))) handle_error("NTR: Read Central");
-            if (central.signature != zip_central_magic) handle_error("NTR: Bad Central");
+            if (!zip.readall(&central, sizeof(central))) throw error("NTR: Read Central");
+            if (central.signature != zip_central_magic) throw error("NTR: Bad Central");
             central_name.resize(bswap(central.name_len));
-            if (!zip.readall(central_name)) handle_error("NTR: Read Central Name");
+            if (!zip.readall(central_name)) throw error("NTR: Read Central Name");
             central_extra.resize(bswap(central.extra_len));
-            if (!zip.readall(central_extra)) handle_error("NTR: Read Central Extra");
+            if (!zip.readall(central_extra)) throw error("NTR: Read Central Extra");
             central_comment.resize(bswap(central.comment_len));
-            if (!zip.readall(central_comment)) handle_error("NTR: Read Central Comment");
+            if (!zip.readall(central_comment)) throw error("NTR: Read Central Comment");
 
             LOG("Read End");
-            if (!zip.readall(&end, sizeof(end))) handle_error("NTR: Read End");
-            if (end.signature != zip_end_magic) handle_error("NTR: Bad End");
+            if (!zip.readall(&end, sizeof(end))) throw error("NTR: Read End");
+            if (end.signature != zip_end_magic) throw error("NTR: Bad End");
             end.comment_len = bswap(std::uint16_t{0});
 
             LOG("Close NTR");
-            if (!zip.close()) handle_error("NTR: Read CloseFile");
+            if (!zip.close()) throw error("NTR: Read CloseFile");
         }
 
         virtual void Modify() override {
@@ -238,27 +238,27 @@ namespace {
         virtual void Write() override {
             LOG("Open ZIP Write");
             IOSUFSA::File zip(fsa);
-            if (!zip.open(path, "wb")) handle_error("NTR: Write OpenFile");
+            if (!zip.open(path, "wb")) throw error("NTR: Write OpenFile");
 
             LOG("Write Local");
-            if (!zip.writeall(&local, sizeof(local))) handle_error("NTR: Write Local");
-            if (!zip.writeall(local_name)) handle_error("NTR: Write Local Name");
-            if (!zip.writeall(local_extra)) handle_error("NTR: Write Local Extra");
+            if (!zip.writeall(&local, sizeof(local))) throw error("NTR: Write Local");
+            if (!zip.writeall(local_name)) throw error("NTR: Write Local Name");
+            if (!zip.writeall(local_extra)) throw error("NTR: Write Local Extra");
 
             LOG("Write NTR");
-            if (!zip.writeall(data)) handle_error("NTR: Write Data");
+            if (!zip.writeall(data)) throw error("NTR: Write Data");
 
             LOG("Write Central");
-            if (!zip.writeall(&central, sizeof(central))) handle_error("NTR: Write Central");
-            if (!zip.writeall(central_name)) handle_error("NTR: Write Central Name");
-            if (!zip.writeall(central_extra)) handle_error("NTR: Write Central Extra");
-            if (!zip.writeall(central_comment)) handle_error("NTR: Write Central Comment");
+            if (!zip.writeall(&central, sizeof(central))) throw error("NTR: Write Central");
+            if (!zip.writeall(central_name)) throw error("NTR: Write Central Name");
+            if (!zip.writeall(central_extra)) throw error("NTR: Write Central Extra");
+            if (!zip.writeall(central_comment)) throw error("NTR: Write Central Comment");
 
             LOG("Write End");
-            if (!zip.writeall(&end, sizeof(end))) handle_error("NTR: Write End");
+            if (!zip.writeall(&end, sizeof(end))) throw error("NTR: Write End");
 
             LOG("Close ZIP Write");
-            if (!zip.close()) handle_error("NTR: Write CloseFile");
+            if (!zip.close()) throw error("NTR: Write CloseFile");
         }
 
     private:

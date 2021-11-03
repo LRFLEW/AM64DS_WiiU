@@ -2,6 +2,7 @@
 #define IOSUFSA_HPP
 
 #include <cstdint>
+#include <exception>
 #include <iterator>
 #include <memory>
 #include <optional>
@@ -9,10 +10,15 @@
 #include <vector>
 
 #include "aligned.hpp"
-#include "error.hpp"
+#include "exception.hpp"
 
 class IOSUFSA {
 public:
+    class no_iosuhax : public std::exception {
+    public:
+        virtual const char *what() const noexcept override { return "No IOSUHAX"; }
+    };
+
     IOSUFSA() = default;
     ~IOSUFSA() { if (is_open()) close(); }
 
@@ -41,7 +47,7 @@ public:
         File(File &&o) : fsa(o.fsa), file_fd(o.file_fd) { o.file_fd = -1; }
         File &operator=(File &&o) {
             if (std::addressof(o.fsa) != std::addressof(fsa))
-                handle_error("Can't Move Files Between FSAs");
+                throw error("FSA: File Move");
             close(); file_fd = o.file_fd; o.file_fd = -1; return *this;
         }
 

@@ -7,7 +7,6 @@ class WUProc {
 public:
     WUProc();
     ~WUProc();
-    static WUProc &get_global() noexcept;
     bool update();
 
     void block_home();

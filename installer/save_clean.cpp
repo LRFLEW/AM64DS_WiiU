@@ -7,7 +7,7 @@
 
 #include <nn/act.h>
 
-#include "error.hpp"
+#include "exception.hpp"
 #include "iosufsa.hpp"
 #include "log.hpp"
 #include "patch.hpp"
@@ -35,7 +35,7 @@ namespace {
 
 void save_clean(const IOSUFSA &fsa, std::string_view title) {
     std::size_t title_off = title.rfind(title_dir);
-    if (title_off == std::string_view::npos) handle_error("Save: User");
+    if (title_off == std::string_view::npos) throw error("Save: User");
 
     const std::size_t suffix_offset = title.length() + save_dir.length() - title_dir.length();
     std::string state_path;
@@ -43,7 +43,7 @@ void save_clean(const IOSUFSA &fsa, std::string_view title) {
     state_path.append(title.substr(0, title_off)).append(save_dir);
     state_path.append(title.substr(title_off + title_dir.length())).append(state_suffix);
 
-    if (nn::act::Initialize().IsFailure()) handle_error("Save: NN_Act Init");
+    if (nn::act::Initialize().IsFailure()) throw error("Save: NN_Act Init");
     act_guard guard;
     nn::act::SlotNo user_count = nn::act::GetNumOfAccounts();
     LOG("Users Count: %d", user_count);

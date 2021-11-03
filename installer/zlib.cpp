@@ -3,7 +3,7 @@
 #define ZLIB_CONST
 #include <zlib.h>
 
-#include "error.hpp"
+#include "exception.hpp"
 
 namespace {
     class DeflateGuard {
@@ -39,7 +39,7 @@ Zlib::bytes Zlib::compress(const bytes &data, bool rpx) {
 
     int zres = ::deflateInit2(&strm, Z_DEFAULT_COMPRESSION, Z_DEFLATED,
                             rpx ? MAX_WBITS : -MAX_WBITS, MAX_MEM_LEVEL, Z_DEFAULT_STRATEGY);
-    if (zres != Z_OK) handle_error("Zlib: deflateInit2");
+    if (zres != Z_OK) throw error("Zlib: deflateInit2");
     DeflateGuard guard(&strm);
 
     std::size_t cmp_max_size = ::deflateBound(&strm, data.size());
@@ -48,8 +48,8 @@ Zlib::bytes Zlib::compress(const bytes &data, bool rpx) {
     strm.avail_out = cmp_max_size;
 
     zres = ::deflate(&strm, Z_FINISH);
-    if (zres != Z_STREAM_END) handle_error("Zlib: Incomplete Compression");
-    if (strm.avail_in != 0) handle_error("Zlib: Too Much Compress Data");
+    if (zres != Z_STREAM_END) throw error("Zlib: Incomplete Compression");
+    if (strm.avail_in != 0) throw error("Zlib: Too Much Compress Data");
     cmp.resize(cmp.size() - strm.avail_out);
     cmp.shrink_to_fit();
 
@@ -69,12 +69,12 @@ Zlib::bytes Zlib::decompress(const bytes &data, std::size_t dec_len, bool rpx) {
     strm.opaque = Z_NULL;
 
     int zres = ::inflateInit2(&strm, rpx ? MAX_WBITS : -MAX_WBITS);
-    if (zres != Z_OK) handle_error("Zlib: inflateInit2");
+    if (zres != Z_OK) throw error("Zlib: inflateInit2");
     InflateGuard guard(&strm);
 
     zres = ::inflate(&strm, Z_FINISH);
-    if (zres != Z_STREAM_END) handle_error("Zlib: Incomplete Decompression");
-    if (strm.avail_in != 0 || strm.avail_out != 0) handle_error("Zlib: Too Much Decomp Data");
+    if (zres != Z_STREAM_END) throw error("Zlib: Incomplete Decompression");
+    if (strm.avail_in != 0 || strm.avail_out != 0) throw error("Zlib: Too Much Decomp Data");
 
     return dec;
 }

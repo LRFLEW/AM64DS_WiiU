@@ -11,12 +11,9 @@
 
 namespace {
     constexpr std::uint32_t CONSOLE_FRAME_HEAP_TAG = 0x000DECAF;
-
-    Screen *global_screen = nullptr;
 }
 
 Screen::Screen() {
-    global_screen = this;
     OSScreenInit();
     S( len[s] = OSScreenGetBufferSizeEx(s); )
     MEMHeapHandle heap = MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1);
@@ -41,8 +38,4 @@ void Screen::swap() {
     S( DCFlushRange(buf[s], len[s]); )
     S( OSScreenFlipBuffersEx(s); )
     S( OSScreenClearBufferEx(s, 0x000000); )
-}
-
-Screen &Screen::get_global() noexcept {
-    return *global_screen;
 }

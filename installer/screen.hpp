@@ -16,7 +16,6 @@ public:
 
     Screen();
     ~Screen();
-    static Screen &get_global() noexcept;
 
     Screen(const Screen &) = delete;
     Screen(Screen &&) = delete;

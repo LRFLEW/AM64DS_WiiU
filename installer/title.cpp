@@ -10,7 +10,7 @@
 #include <nn/acp/title.h>
 
 #include "aligned.hpp"
-#include "error.hpp"
+#include "exception.hpp"
 #include "hachi_patch.hpp"
 #include "log.hpp"
 #include "ntr_patch.hpp"
@@ -18,7 +18,7 @@
 namespace {
     class MCP {
     public:
-        MCP() { fd = MCP_Open(); if (fd < 0) handle_error("MCP: Open"); }
+        MCP() { fd = MCP_Open(); if (fd < 0) throw error("MCP: Open"); }
         ~MCP() { MCP_Close(fd); }
         operator std::int32_t() { return fd; }
 
@@ -28,7 +28,7 @@ namespace {
 
     class UC {
     public:
-        UC() { fd = UCOpen(); if (fd < 0) handle_error("UC: Open"); }
+        UC() { fd = UCOpen(); if (fd < 0) throw error("UC: Open"); }
         ~UC() { UCClose(fd); }
         operator std::int32_t() { return fd; }
 
@@ -51,7 +51,7 @@ namespace {
         std::int32_t res = UCReadSysConfig(uc, 1, &request);
         if (res < 0 || language >= max_languages) {
             language = 0xFF;
-            handle_error("Lang: bad UCReadSysConfig");
+            throw error("Lang: bad UCReadSysConfig");
         }
         LOG("Got language: %d", language);
         return language;
@@ -67,7 +67,7 @@ std::vector<Title> Title::get_titles() {
     int res = MCP_TitleListByAppType(mcp, MCP_APP_TYPE_GAME,
                                      &count, titles.data(),
                                      sizeof(MCPTitleListType) * titles.size());
-    if (res < 0) handle_error("MCP: bad list");
+    if (res < 0) throw error("MCP: bad list");
     titles.resize(count);
     LOG("Titles Count: %d", count);
 
@@ -81,7 +81,7 @@ std::vector<Title> Title::get_titles() {
 std::string Title::get_name_impl() {
     std::uint32_t language = get_sys_language();
     alignas(0x40) ACPMetaXml meta;
-    if (ACPGetTitleMetaXml(id, &meta) < 0) handle_error("ACP: bad meta");
+    if (ACPGetTitleMetaXml(id, &meta) < 0) throw error("ACP: bad meta");
 
     const char (*names)[512] = &meta.longname_ja;
     //const char (*names)[256] = &meta.shortname_ja;

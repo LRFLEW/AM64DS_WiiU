@@ -117,7 +117,7 @@ void IOSUFSA::open() {
 
     bool iosu = open_dev();
     if (!iosu) iosu = open_mcp();
-    if (!iosu) handle_no_iosuhax();
+    if (!iosu) throw no_iosuhax{};
 
     // Init FSA
     alignas(0x40) std::int32_t recv[1];
@@ -126,7 +126,7 @@ void IOSUFSA::open() {
         // Cleanup IOSUHAX
         if (mcp_fd) close_mcp();
         else close_dev();
-        handle_error("IOSUHAX: Open FSA");
+        throw error("IOSUHAX: Open FSA");
     }
     fsa_fd = recv[0];
 }
@@ -144,24 +144,24 @@ void IOSUFSA::close() {
     if (mcp_fd >= 0) iosu_good = close_mcp();
     else iosu_good = close_dev();
 
-    if (!iosu_good) handle_error("IOSUHAX: Close HAX");
-    if (!fsa_good) handle_error("IOSUHAX: Close FSA");
+    if (!iosu_good) throw error("IOSUHAX: Close HAX");
+    if (!fsa_good) throw error("IOSUHAX: Close FSA");
 }
 
 bool IOSUFSA::remove(std::string_view path) const {
-    if (!is_open()) handle_error("IOSUHAX: Remove: Not Open");
+    if (!is_open()) throw error("IOSUHAX: Remove: Not Open");
 
     aligned::vector<std::uint8_t, 0x40> msg = make_msg_strings<0x40>(fsa_fd, { path });
 
     alignas(0x40) std::int32_t recv[1];
     int res = IOS_Ioctl(iosu_fd, IOCTL_FSA_REMOVE, msg.data(), msg.size(), recv, sizeof(recv));
-    if (res < 0) handle_error("IOSUHAX: Remove: IOS_Ioctl Failed");
+    if (res < 0) throw error("IOSUHAX: Remove: IOS_Ioctl Failed");
 
     return (recv[0] >= 0);
 }
 
 bool IOSUFSA::flush_volume(std::string_view path) const {
-    if (!is_open()) handle_error("IOSUHAX: FlushVolume: Not Open");
+    if (!is_open()) throw error("IOSUHAX: FlushVolume: Not Open");
     if (mcp_fd < 0) return true;
 
     aligned::vector<std::uint8_t, 0x40> msg = make_msg_strings<0x40>(fsa_fd, { path });
@@ -170,23 +170,23 @@ bool IOSUFSA::flush_volume(std::string_view path) const {
     int res = IOS_Ioctl(iosu_fd, IOCTL_FSA_FLUSHVOLUME, msg.data(), msg.size(), recv, sizeof(recv));
     // Mocha lacks the command, so soft-fail in this case
     if (res == ERROR_INVALID_ARG) return false;
-    if (res < 0) handle_error("IOSUHAX: FlushVolume: IOS_Ioctl Failed");
+    if (res < 0) throw error("IOSUHAX: FlushVolume: IOS_Ioctl Failed");
 
     return (recv[0] >= 0);
 }
 
 bool IOSUFSA::File::open(std::string_view path, std::string_view mode) {
-    if (!fsa.is_open()) handle_error("IOSUHAX: FileOpen: FSA Not Open");
+    if (!fsa.is_open()) throw error("IOSUHAX: FileOpen: FSA Not Open");
     if (file_fd >= 0) close();
 
     aligned::vector<std::uint8_t, 0x40> msg = make_msg_strings<0x40>(fsa.fsa_fd, { path, mode });
 
     alignas(0x40) std::int32_t recv[2];
     int res = IOS_Ioctl(fsa.iosu_fd, IOCTL_FSA_OPENFILE, msg.data(), msg.size(), recv, sizeof(recv));
-    if (res < 0) handle_error("IOSUHAX: FileOpen: IOS_Ioctl Failed");
+    if (res < 0) throw error("IOSUHAX: FileOpen: IOS_Ioctl Failed");
 
     if (recv[0] >= 0) {
-        if (recv[1] < 0) handle_error("IOSUHAX: FileOpen: Bad Handle");
+        if (recv[1] < 0) throw error("IOSUHAX: FileOpen: Bad Handle");
         file_fd = recv[1];
         return true;
     } else return false;
@@ -194,7 +194,7 @@ bool IOSUFSA::File::open(std::string_view path, std::string_view mode) {
 
 bool IOSUFSA::File::close() {
     if (!is_open()) return true;
-    if (!fsa.is_open()) handle_error("IOSUHAX: FileClose: FSA Not Open");
+    if (!fsa.is_open()) throw error("IOSUHAX: FileClose: FSA Not Open");
 
     alignas(0x40) std::int32_t msg[2];
     msg[0] = fsa.fsa_fd;
@@ -204,7 +204,7 @@ bool IOSUFSA::File::close() {
     int res = IOS_Ioctl(fsa.iosu_fd, IOCTL_FSA_CLOSEFILE, msg, sizeof(msg), recv, sizeof(recv));
     file_fd = -1;
 
-    if (res < 0) handle_error("IOSUHAX: FileClose: IOS_Ioctl Failed");
+    if (res < 0) throw error("IOSUHAX: FileClose: IOS_Ioctl Failed");
     return (recv[0] >= 0);
 }
 
@@ -220,7 +220,7 @@ std::int32_t IOSUFSA::File::read_impl(void *data, std::size_t size, std::size_t 
     aligned::vector<std::uint8_t, 0x40> &recv = buffer;
     recv.resize((size * count + 0x7F) & ~0x3F);
     int res = IOS_Ioctl(fsa.iosu_fd, IOCTL_FSA_READFILE, msg, sizeof(msg), recv.data(), recv.size());
-    if (res < 0) handle_error("IOSUHAX: FileRead: IOS_Ioctl Failed");
+    if (res < 0) throw error("IOSUHAX: FileRead: IOS_Ioctl Failed");
 
     std::int32_t out = reinterpret_cast<std::int32_t *>(recv.data())[0];
     if (data && out > 0) std::memcpy(data, recv.data() + 0x40, size * count);
@@ -228,14 +228,14 @@ std::int32_t IOSUFSA::File::read_impl(void *data, std::size_t size, std::size_t 
 }
 
 std::int32_t IOSUFSA::File::read(void *data, std::size_t size, std::size_t count) const {
-    if (!is_open()) handle_error("IOSUHAX: FileRead: Not Open");
+    if (!is_open()) throw error("IOSUHAX: FileRead: Not Open");
 
     aligned::vector<std::uint8_t, 0x40> buffer;
     return read_impl(data, size, count, buffer);
 }
 
 bool IOSUFSA::File::readall(void *data, std::size_t size) const {
-    if (!is_open()) handle_error("IOSUHAX: FileReadAll: Not Open");
+    if (!is_open()) throw error("IOSUHAX: FileReadAll: Not Open");
 
     aligned::vector<std::uint8_t, 0x40> buffer;
     unsigned char *bdata = reinterpret_cast<unsigned char *>(data);
@@ -250,7 +250,7 @@ bool IOSUFSA::File::readall(void *data, std::size_t size) const {
 }
 
 bool IOSUFSA::File::skip(std::size_t size) const {
-    if (!is_open()) handle_error("IOSUHAX: FileSkip: Not Open");
+    if (!is_open()) throw error("IOSUHAX: FileSkip: Not Open");
 
     aligned::vector<std::uint8_t, 0x40> buffer;
     while (size > 0) {
@@ -276,20 +276,20 @@ std::int32_t IOSUFSA::File::write_impl(const void *data, std::size_t size, std::
 
     alignas(0x40) std::int32_t recv[1];
     int res = IOS_Ioctl(fsa.iosu_fd, IOCTL_FSA_WRITEFILE, msg.data(), msg.size(), recv, sizeof(recv));
-    if (res < 0) handle_error("IOSUHAX: FileWrite: IOS_Ioctl Failed");
+    if (res < 0) throw error("IOSUHAX: FileWrite: IOS_Ioctl Failed");
 
     return recv[0];
 }
 
 std::int32_t IOSUFSA::File::write(const void *data, std::size_t size, std::size_t count) const {
-    if (!is_open()) handle_error("IOSUHAX: FileWrite: Not Open");
+    if (!is_open()) throw error("IOSUHAX: FileWrite: Not Open");
 
     aligned::vector<std::uint8_t, 0x40> buffer;
     return write_impl(data, size, count, buffer);
 }
 
 bool IOSUFSA::File::writeall(const void *data, std::size_t size) const {
-    if (!is_open()) handle_error("IOSUHAX: FileWriteAll: Not Open");
+    if (!is_open()) throw error("IOSUHAX: FileWriteAll: Not Open");
 
     aligned::vector<std::uint8_t, 0x40> buffer;
     const unsigned char *bdata = reinterpret_cast<const unsigned char *>(data);
@@ -304,7 +304,7 @@ bool IOSUFSA::File::writeall(const void *data, std::size_t size) const {
 }
 
 bool IOSUFSA::File::seek(std::size_t position) const {
-    if (!is_open()) handle_error("IOSUHAX: FileSeek: Not Open");
+    if (!is_open()) throw error("IOSUHAX: FileSeek: Not Open");
 
     alignas(0x40) std::int32_t msg[3];
     msg[0] = fsa.fsa_fd;
@@ -313,7 +313,7 @@ bool IOSUFSA::File::seek(std::size_t position) const {
 
     alignas(0x40) std::int32_t recv[1];
     int res = IOS_Ioctl(fsa.iosu_fd, IOCTL_FSA_SETFILEPOS, msg, sizeof(msg), recv, sizeof(recv));
-    if (res < 0) handle_error("IOSUHAX: FileSeek: IOS_Ioctl Failed");
+    if (res < 0) throw error("IOSUHAX: FileSeek: IOS_Ioctl Failed");
 
     return (recv[0] >= 0);
 }
