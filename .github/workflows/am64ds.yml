@@ -2,32 +2,23 @@ name: AM64DS
 on: [push, pull_request]
 jobs:
   build:
+    strategy:
+      matrix:
+        include:
+          - name: AM64DS
+            args:
+          - name: AM64DS Debug
+            args: DEBUG_LOG=1
+    name: ${{ matrix.name }}
     runs-on: ubuntu-latest
     container: ghcr.io/lrflew/devkitppc:20211103
     steps:
       - name: Checkout AM64DS
         uses: actions/checkout@v2
       - name: Build
-        run: make
-      - name: Package
-        run: make package
+        run: make ${{ matrix.args }}
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
         with:
-          name: AM64DS
-          path: am64ds.zip
-  build-debug:
-    runs-on: ubuntu-latest
-    container: devkitpro/devkitppc:20210726
-    steps:
-      - name: Checkout AM64DS
-        uses: actions/checkout@v2
-      - name: Build
-        run: make DEBUG_LOG=1
-      - name: Package
-        run: make package
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: AM64DS-Debug
-          path: am64ds.zip
+          name: ${{ matrix.name }}
+          path: am64ds.rpx
