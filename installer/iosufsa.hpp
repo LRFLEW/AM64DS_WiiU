@@ -20,7 +20,7 @@ public:
     };
 
     IOSUFSA() = default;
-    ~IOSUFSA() { if (is_open()) close(); }
+    ~IOSUFSA();
 
     // IOSUFSA instances need stable addresses for consistent references,
     // so the class is non-copyable and non-movable.
@@ -39,7 +39,7 @@ public:
     class File {
     public:
         explicit File(const IOSUFSA &fsa) : fsa(fsa) { }
-        ~File() { if (is_open()) close(); }
+        ~File();
 
         // Move Only
         File(const File &) = delete;

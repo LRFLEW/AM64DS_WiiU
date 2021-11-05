@@ -11,6 +11,7 @@
 #include <coreinit/time.h>
 
 #include "aligned.hpp"
+#include "log.hpp"
 
 namespace {
     constexpr std::int32_t IOCTL_CHECK_IF_IOSUHAX = 0x5B;
@@ -57,6 +58,15 @@ namespace {
     }
 
     void nullfuncvp(IOSError, void *) { }
+}
+
+IOSUFSA::~IOSUFSA() {
+    if (is_open()) try {
+        LOG("IOSUFSA destructed while open");
+        close();
+    } catch (error &e) {
+        LOG("ERROR in ~IOSUFSA: %s", e.what());
+    }
 }
 
 bool IOSUFSA::open_dev() {
@@ -173,6 +183,15 @@ bool IOSUFSA::flush_volume(std::string_view path) const {
     if (res < 0) throw error("IOSUHAX: FlushVolume: IOS_Ioctl Failed");
 
     return (recv[0] >= 0);
+}
+
+IOSUFSA::File::~File() {
+    if (is_open()) try {
+        LOG("File destructed while open");
+        close();
+    } catch (error &e) {
+        LOG("ERROR in ~File: %s", e.what());
+    }
 }
 
 bool IOSUFSA::File::open(std::string_view path, std::string_view mode) {
