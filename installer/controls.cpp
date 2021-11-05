@@ -25,7 +25,8 @@ Controls::Input Controls::get() const {
     VPADStatus vpad;
     VPADReadError verr = VPAD_READ_NO_SAMPLES;
     KPADStatus kpad[KMAX];
-    std::int32_t vcount, kcount[KMAX], kerr[KMAX];
+    std::int32_t kerr[KMAX] = { -1, -1, -1, -1 };
+    std::int32_t vcount, kcount[KMAX];
 
     vcount = VPADRead(VPAD_CHAN_0, &vpad, 1, &verr);
     for (int chan = 0; chan < KMAX; ++chan)
@@ -40,7 +41,7 @@ Controls::Input Controls::get() const {
             return Controls::Input::Down;
     }
 
-    for (int chan = 0; chan < 4; ++chan) {
+    for (int chan = 0; chan < KMAX; ++chan) {
         KPADStatus &pad = kpad[chan];
         if (kcount[chan] == 1 && kerr[chan] == KPAD_ERROR_OK) {
             if (pad.trigger & WPAD_BUTTON_A) return Controls::Input::A;
