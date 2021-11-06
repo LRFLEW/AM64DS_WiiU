@@ -277,43 +277,45 @@ namespace {
     };
 }
 
+#define ret(X) do { zip.close(); return X; } while(0)
+
 Patch::Status ntr_check(const IOSUFSA &fsa, std::string_view title) {
     std::string zip_path = util::concat_sv({ title, zip_file });
     LOG("Open ZIP");
     IOSUFSA::File zip(fsa);
-    if (!zip.open(zip_path, "rb")) return Patch::Status::INVALID_ZIP;
+    if (!zip.open(zip_path, "rb")) ret(Patch::Status::INVALID_ZIP);
 
     LOG("Read Local Header");
     zip_local local;
-    if (!zip.readall(&local, sizeof(local))) return Patch::Status::INVALID_ZIP;
-    if (local.signature != zip_local_magic) return Patch::Status::INVALID_ZIP;
-    if (bswap(local.method) != 0 && bswap(local.method) != 8) return Patch::Status::INVALID_ZIP;
-    if (!zip.skip(bswap(local.name_len) + bswap(local.extra_len))) return Patch::Status::INVALID_ZIP;
+    if (!zip.readall(&local, sizeof(local))) ret(Patch::Status::INVALID_ZIP);
+    if (local.signature != zip_local_magic) ret(Patch::Status::INVALID_ZIP);
+    if (bswap(local.method) != 0 && bswap(local.method) != 8) ret(Patch::Status::INVALID_ZIP);
+    if (!zip.skip(bswap(local.name_len) + bswap(local.extra_len))) ret(Patch::Status::INVALID_ZIP);
 
     LOG("Read NTR");
     std::vector<std::uint8_t> data(bswap(local.cmp_size));
-    if (!zip.readall(data)) return Patch::Status::INVALID_ZIP;
+    if (!zip.readall(data)) ret(Patch::Status::INVALID_ZIP);
 
     LOG("Read Central");
     zip_central central;
-    if (!zip.readall(&central, sizeof(central))) return Patch::Status::INVALID_ZIP;
-    if (central.signature != zip_central_magic) return Patch::Status::INVALID_ZIP;
+    if (!zip.readall(&central, sizeof(central))) ret(Patch::Status::INVALID_ZIP);
+    if (central.signature != zip_central_magic) ret(Patch::Status::INVALID_ZIP);
     if (!zip.skip(bswap(central.name_len) + bswap(central.extra_len) +
-                  bswap(central.comment_len))) return Patch::Status::INVALID_ZIP;
+                  bswap(central.comment_len))) ret(Patch::Status::INVALID_ZIP);
 
     LOG("Read End");
     zip_end end;
-    if (!zip.readall(&end, sizeof(end))) return Patch::Status::INVALID_ZIP;
-    if (end.signature != zip_end_magic) return Patch::Status::INVALID_ZIP;
+    if (!zip.readall(&end, sizeof(end))) ret(Patch::Status::INVALID_ZIP);
+    if (end.signature != zip_end_magic) ret(Patch::Status::INVALID_ZIP);
 
     LOG("Close NTR");
-    if (!zip.close()) return Patch::Status::INVALID_ZIP;
+    if (!zip.close()) ret(Patch::Status::INVALID_ZIP);
 
-    if (bswap(local.method) != bswap(central.method)) return Patch::Status::INVALID_ZIP;
+    if (bswap(local.method) != bswap(central.method)) ret(Patch::Status::INVALID_ZIP);
     if (bswap(local.method) == 8) {
         LOG("Decompress NTR");
         data = Zlib::decompress(data, bswap(local.dec_size), false);
-    } else if (bswap(local.method) != 0) return Patch::Status::INVALID_ZIP;
+    } else if (bswap(local.method) != 0) ret(Patch::Status::INVALID_ZIP);
 
     LOG("Check ROM Title");
     std::uint32_t code = *reinterpret_cast<std::uint32_t *>(data.data() + 0x0C);
@@ -323,31 +325,31 @@ Patch::Status ntr_check(const IOSUFSA &fsa, std::string_view title) {
         case util::magic_const("ASMJ"):
         case util::magic_const("ASME"):
             if ((maker != 0x3031) || ((revision != 0) && (revision != 1)))
-                return Patch::Status::INVALID_NTR;
+                ret(Patch::Status::INVALID_NTR);
             break;
         case util::magic_const("ASMP"):
         case util::magic_const("ASMK"):
-            if ((maker != 0x3031) || (revision != 0)) return Patch::Status::INVALID_NTR;
+            if ((maker != 0x3031) || (revision != 0)) ret(Patch::Status::INVALID_NTR);
             break;
         case util::magic_const("HAXX"):
-            return Patch::Status::IS_HAXCHI;
+            ret(Patch::Status::IS_HAXCHI);
         default:
-            return Patch::Status::INVALID_NTR;
+            ret(Patch::Status::INVALID_NTR);
     }
 
     LOG("Check Padding");
     for (std::size_t i = 0; i < any_pat_len; ++i) {
-        if (data[any_pat_off + i] != 0) return Patch::Status::INVALID_NTR;
+        if (data[any_pat_off + i] != 0) ret(Patch::Status::INVALID_NTR);
     }
 
     LOG("NTR GOOD");
     switch (code) {
-        case util::magic_const("ASMJ"): return Patch::Status::IS_JPN;
-        case util::magic_const("ASME"): return Patch::Status::IS_USA;
-        case util::magic_const("ASMP"): return Patch::Status::IS_EUR;
-        case util::magic_const("ASMK"): return Patch::Status::IS_KOR;
+        case util::magic_const("ASMJ"): ret(Patch::Status::IS_JPN);
+        case util::magic_const("ASME"): ret(Patch::Status::IS_USA);
+        case util::magic_const("ASMP"): ret(Patch::Status::IS_EUR);
+        case util::magic_const("ASMK"): ret(Patch::Status::IS_KOR);
     }
-    return Patch::Status::INVALID_NTR;
+    ret(Patch::Status::INVALID_NTR);
 };
 
 std::unique_ptr<Patch> ntr_patch(const IOSUFSA &fsa, std::string_view title) {

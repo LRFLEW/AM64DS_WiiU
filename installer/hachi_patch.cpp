@@ -244,37 +244,39 @@ namespace {
     };
 }
 
+#define ret(X) do { rpx.close(); return X; } while(0)
+
 Patch::Status hachi_check(const IOSUFSA &fsa, std::string_view title) {
     std::string rpx_path = util::concat_sv({ title, hachi_file });
     LOG("Open RPX");
     IOSUFSA::File rpx(fsa);
-    if (!rpx.open(rpx_path, "rb")) return Patch::Status::MISSING_RPX;
+    if (!rpx.open(rpx_path, "rb")) ret(Patch::Status::MISSING_RPX);
 
     LOG("Read Header");
     Elf32_Ehdr ehdr;
-    if (!rpx.readall(&ehdr, sizeof(ehdr))) return Patch::Status::INVALID_RPX;
-    if (!util::memequal(ehdr, expected_ehdr)) return Patch::Status::INVALID_RPX;
+    if (!rpx.readall(&ehdr, sizeof(ehdr))) ret(Patch::Status::INVALID_RPX);
+    if (!util::memequal(ehdr, expected_ehdr)) ret(Patch::Status::INVALID_RPX);
 
     LOG("Read CRC Section Header");
     Elf32_Shdr crc_shdr;
-    if (!rpx.seek(ehdr.e_shoff + 27 * sizeof(Elf32_Shdr))) return Patch::Status::INVALID_RPX;
-    if (!rpx.readall(&crc_shdr, sizeof(crc_shdr))) return Patch::Status::INVALID_RPX;
-    if (crc_shdr.sh_type != RPX_CRCS) return Patch::Status::INVALID_RPX;
-    if (crc_shdr.sh_size != sizeof(expected_crcs)) return Patch::Status::INVALID_RPX;
+    if (!rpx.seek(ehdr.e_shoff + 27 * sizeof(Elf32_Shdr))) ret(Patch::Status::INVALID_RPX);
+    if (!rpx.readall(&crc_shdr, sizeof(crc_shdr))) ret(Patch::Status::INVALID_RPX);
+    if (crc_shdr.sh_type != RPX_CRCS) ret(Patch::Status::INVALID_RPX);
+    if (crc_shdr.sh_size != sizeof(expected_crcs)) ret(Patch::Status::INVALID_RPX);
 
     LOG("Read Patch Signature");
     std::uint32_t sig;
-    if (!rpx.readall(&sig, sizeof(sig))) return Patch::Status::INVALID_RPX;
-    if (sig == magic_amds) return Patch::Status::PATCHED;
+    if (!rpx.readall(&sig, sizeof(sig))) ret(Patch::Status::INVALID_RPX);
+    if (sig == magic_amds) ret(Patch::Status::PATCHED);
 
     LOG("Read CRC Data");
     std::array<std::uint32_t, expected_ehdr.e_shnum> crcs;
-    if (!rpx.seek(crc_shdr.sh_offset)) return Patch::Status::INVALID_RPX;
-    if (!rpx.readall(&crcs, sizeof(crcs))) return Patch::Status::INVALID_RPX;
-    if (!util::memequal(crcs, expected_crcs)) return Patch::Status::INVALID_RPX;
+    if (!rpx.seek(crc_shdr.sh_offset)) ret(Patch::Status::INVALID_RPX);
+    if (!rpx.readall(&crcs, sizeof(crcs))) ret(Patch::Status::INVALID_RPX);
+    if (!util::memequal(crcs, expected_crcs)) ret(Patch::Status::INVALID_RPX);
 
     LOG("HACHI GOOD");
-    return Patch::Status::RPX_ONLY;
+    ret(Patch::Status::RPX_ONLY);
 }
 
 std::unique_ptr<Patch> hachi_patch(const IOSUFSA &fsa, std::string_view title) {
