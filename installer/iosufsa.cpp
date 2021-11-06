@@ -84,7 +84,13 @@ bool IOSUFSA::open_mcp() {
     mcp_fd = MCP_Open();
     if (mcp_fd < 0) return false;
 
-    IOS_IoctlAsync(mcp_fd, 0x62, nullptr, 0, nullptr, 0, nullfuncvp, nullptr);
+    int res = IOS_IoctlAsync(mcp_fd, 0x62, nullptr, 0, nullptr, 0, nullfuncvp, nullptr);
+    if (res < 0) {
+        // Cleanup MCP
+        MCP_Close(mcp_fd);
+        mcp_fd = -1;
+        return false;
+    }
     OSSleepTicks(OSSecondsToTicks(1));
 
     iosu_fd = IOS_Open("/dev/mcp", (IOSOpenMode) 0);
@@ -98,8 +104,8 @@ bool IOSUFSA::open_mcp() {
     // Check if actually IOSUHAX
     alignas(0x40) std::int32_t recv[1];
     recv[0] = 0;
-    IOS_Ioctl(iosu_fd, IOCTL_CHECK_IF_IOSUHAX, nullptr, 0, recv, sizeof(recv));
-    if (recv[0] != IOSUHAX_MAGIC_WORD) {
+    res = IOS_Ioctl(iosu_fd, IOCTL_CHECK_IF_IOSUHAX, nullptr, 0, recv, sizeof(recv));
+    if (res < 0 || recv[0] != IOSUHAX_MAGIC_WORD) {
         close_mcp();
         return false;
     }
@@ -115,7 +121,7 @@ bool IOSUFSA::close_mcp() {
     good &= (res >= 0);
     OSSleepTicks(OSSecondsToTicks(1));
 
-    MCP_Close(mcp_fd);
+    res = MCP_Close(mcp_fd);
     mcp_fd = -1;
     good &= (res >= 0);
 
