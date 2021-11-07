@@ -107,6 +107,13 @@ namespace {
         LOG("Closing IOSUHAX");
         fsa.close();
     }
+
+    bool has_status(const std::vector<Title> &titles, Patch::Status status) {
+        return std::any_of(titles.begin(), titles.end(),
+            [status](const Title &title) -> bool {
+                return title.get_status_raw() == status;
+            });
+    }
 }
 
 int main(int argc, char **argv) {
@@ -119,7 +126,7 @@ int main(int argc, char **argv) {
     Title::Filtered filtered;
     std::size_t selected = 0;
     ControlState state = ControlState::SELECT;
-    bool full = false;
+    bool full = false, haxchi = false, patched = false;
 
     try {
         {
@@ -135,11 +142,10 @@ int main(int argc, char **argv) {
             }
         }
 
-        bool haxchi = std::any_of(titles.begin(), titles.end(), [](const Title &title) -> bool {
-            return check_titleid(title) && title.get_status_raw() == Patch::Status::IS_HAXCHI;
-        });
+        haxchi = has_status(titles, Patch::Status::IS_HAXCHI);
+        patched = has_status(titles, Patch::Status::PATCHED);
 
-        Messages::select(screen, filtered, selected, full, haxchi, proc.is_hbl());
+        Messages::select(screen, filtered, selected, full, haxchi, patched, proc.is_hbl());
 
         LOG("Entering Proc Loop...");
         while (proc.update()) {
@@ -158,13 +164,13 @@ int main(int argc, char **argv) {
                         case Controls::Input::Up:
                             if (selected > 0) {
                                 Messages::select(screen, filtered, --selected,
-                                                 full, haxchi, proc.is_hbl());
+                                                 full, haxchi, patched, proc.is_hbl());
                             }
                             break;
                         case Controls::Input::Down:
                             if (selected < (filtered.size() + !full) - 1) {
                                 Messages::select(screen, filtered, ++selected,
-                                                 full, haxchi, proc.is_hbl());
+                                                 full, haxchi, patched, proc.is_hbl());
                             }
                             break;
                         default:
@@ -179,6 +185,7 @@ int main(int argc, char **argv) {
                                 proc.flag_dirty();
                                 patch_title(screen, filtered[selected]);
                                 filtered = scan_titles(titles, full);
+                                patched = true;
                                 Messages::post_patch(screen);
                                 state = ControlState::CLEAR;
                             } else {
@@ -186,15 +193,16 @@ int main(int argc, char **argv) {
                                 full = true;
                                 Messages::scanning(screen, full);
                                 filtered = scan_titles(titles, full);
+                                patched = has_status(titles, Patch::Status::PATCHED);
                                 selected = 0;
                                 Messages::select(screen, filtered, selected,
-                                                 full, haxchi, proc.is_hbl());
+                                                 full, haxchi, patched, proc.is_hbl());
                                 state = ControlState::SELECT;
                             }
                             break;
                         case Controls::Input::B:
                             Messages::select(screen, filtered, selected,
-                                             full, haxchi, proc.is_hbl());
+                                             full, haxchi, patched, proc.is_hbl());
                             state = ControlState::SELECT;
                             break;
                         default:
@@ -205,7 +213,7 @@ int main(int argc, char **argv) {
                     switch (controls.get()) {
                         case Controls::Input::B:
                             Messages::select(screen, filtered, (selected = 0),
-                                             full, haxchi, proc.is_hbl());
+                                             full, haxchi, patched, proc.is_hbl());
                             state = ControlState::SELECT;
                             break;
                         default:

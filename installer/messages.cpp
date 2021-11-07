@@ -41,7 +41,10 @@ namespace {
     constexpr Screen::Line more_down = { 9, 9, "vvvvvvvvvvv" };
     constexpr Screen::Line select_a = { bottom - 2, 2, "Press A to patch the selected title" };
 
-    constexpr Screen::Line no_list = { 2, 0, "Super Mario 64 DS was not found on your Wii U." };
+    constexpr Screen::Line no_list = { 2, 0,
+        "Super Mario 64 DS was not found on your Wii U." };
+    constexpr Screen::Line patched_list = { 2, 0,
+        "All copies of Super Mario 64 DS found are already patched." };
     constexpr Screen::Line rec_full = { 3, 0,
         "If it's installed in a non-standard location,\n"
         "press A to perform a full-system scan." };
@@ -112,10 +115,12 @@ void Messages::scanning(Screen &screen, bool full) {
 }
 
 void Messages::select(Screen &screen, const Title::Filtered &titles,
-                      std::size_t selected, bool full, bool haxchi, bool hbl) {
+                      std::size_t selected, bool full, bool haxchi,
+                      bool patched, bool hbl) {
     screen.put(title_line);
     if (titles.empty()) {
-        screen.put(no_list);
+        if (patched) screen.put(patched_list);
+        else screen.put(no_list);
         if (!full) {
             screen.put(rec_full);
             screen.put(no_a);
