@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <app version="1">
   <name>AM64DS Patcher</name>
+  <version>v1.0.0</version>
+  <release_date>20211219000000</release_date>
   <coder>LRFLEW</coder>
-  <version>v0.9.0</version>
-  <release_date>TBD</release_date>
   <short_description>Analog Stick Support Patcher for SM64DS</short_description>
   <long_description>This tools patches installed Super Mario 64 DS Virtual Console titles to add analog controls using the left analog stick and camera rotation with the d-pad and right analog stick.</long_description>
 </app>
