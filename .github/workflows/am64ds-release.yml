@@ -1,0 +1,20 @@
+name: AM64DS Release
+on:
+  release: 
+    types: [published]
+jobs:
+  release:
+    name: AM64DS Release
+    runs-on: ubuntu-latest
+    container: ghcr.io/lrflew/devkitppc:20211103
+    steps:
+      - name: Checkout AM64DS
+        uses: actions/checkout@v2
+      - name: Build
+        run: make
+      - name: Package
+        run: make package
+      - name: Upload Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: am64ds.zip
