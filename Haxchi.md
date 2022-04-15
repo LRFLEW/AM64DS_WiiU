@@ -2,11 +2,15 @@
 
 AM64DS and Haxchi/CBHC cannot be installed to the same title as each other. If you have Haxchi or CBHC installed to your installation of SM64DS, then you will need to do some work to get a compatible installation of SM64DS to use with AM64DS. Below are a number of options you can use to get AM64DS working on your system.
 
-**IF YOU ARE USING CBHC: Before starting,** you should temporarily disable coldboot to ensure that you don't accidentally brick your Wii U. There are things that can go wrong when following these solutions, so it's best to disable coldboot before following any of these steps, and then re-enabling it only once you've tested that everything is working correctly after a reboot. Follow [these instructions](https://wiiu.hacks.guide/#/uninstall-cbhc) for disabling coldboot.
+**IF YOU ARE USING CBHC: Before starting,** you should (temporarily) disable coldboot to ensure that you don't accidentally brick your Wii U. There are things that can go wrong when following any of these solutions, so it's best to disable coldboot before following any of these steps, and then re-enabling it only once you've tested that everything is working correctly after a reboot. Follow [these instructions](https://wiiu.hacks.guide/#/uninstall-cbhc) for disabling coldboot.
+
+## Switch to Tiramisu
+
+This is the most straightforward option for resolving this conflict. Tiramisu is an alternative entry point from Haxchi that provides improved safety and functionality. Tiramisu can be setup to work from coldboot like CBHC, but is installed to a system title, reducing the possibility of accidentally bricking the system. Follow [the instructions on wiiu.hacks.guide](https://wiiu.hacks.guide/#/) to change your installation to use Tiramisu. From there, you can simply uninstall the Haxchi-patched game and redownload it to get the game working with the AM64DS patcher.
 
 ## Switch to Mocha
 
-This is the most straightforward free option for resolving this conflict. Installing [Mocha + Indexiine](https://wiiu.hacks.guide/#/mocha/indexiine/sd-preparation) along with using a [Configurable Payload configured to launch Mocha](https://wiiu.hacks.guide/#/configurable-payload) is equivalent to a non-coldboot Haxchi installation, and should be convenient enough for most people. There is a replacement for Mocha and Haxchi/CBHC in development called Aroma which will support coldboot without requiring a DS title, so this method should only be needed in the short term. Once you've setup Mocha, you can uninstall the Haxchi patched game and redownload it to get the game working with the AM64DS patcher.
+Alternatively, you can instead use Mocha instead of Haxchi. This method is not recommended over Tiramisu, but it is an available option. Installing [Mocha + Indexiine](https://wiiu.hacks.guide/#/archive/mocha/indexiine/sd-preparation) along with using a [Configurable Payload configured to launch Mocha](https://wiiu.hacks.guide/#/configurable-payload) is equivalent to a non-coldboot Haxchi installation, and should be convenient enough for most people. Once you've setup Mocha, you can uninstall the Haxchi patched game and redownload it to get the game working with the AM64DS patcher.
 
 ## Switch Haxchi/CBHC to a different DS game
 
