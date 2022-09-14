@@ -5,8 +5,6 @@
 
 #include <vpad/input.h>
 
-extern "C" void KPADShutdown();
-
 namespace {
     constexpr int KMAX = 4;
 }
