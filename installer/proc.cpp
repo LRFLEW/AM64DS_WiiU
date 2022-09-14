@@ -25,24 +25,22 @@ WUProc::WUProc() {
     hbc = (titleID == HBL_TITLE_ID          ) || (titleID == MII_MAKER_JPN_TITLE_ID) ||
           (titleID == MII_MAKER_USA_TITLE_ID) || (titleID == MII_MAKER_EUR_TITLE_ID);
 
-    if (hbc) OSEnableHomeButtonMenu(false);
+    OSEnableHomeButtonMenu(false);
     ProcUIInitEx(+[](void *) -> std::uint32_t {
             OSSavesDone_ReadyToRelease();
             return 0;
         }, nullptr);
-    if (hbc) {
-        ProcUIRegisterCallback(PROCUI_CALLBACK_HOME_BUTTON_DENIED,
-            +[](void *param) -> std::uint32_t {
-                WUProc *proc = reinterpret_cast<WUProc *>(param);
-                if (proc->home) proc->running = false;
-                return 0;
-            }, this, 100);
-    }
+    ProcUIRegisterCallback(PROCUI_CALLBACK_HOME_BUTTON_DENIED,
+        +[](void *param) -> std::uint32_t {
+            WUProc *proc = reinterpret_cast<WUProc *>(param);
+            if (proc->home) proc->running = false;
+            return 0;
+        }, this, 100);
 }
 
 WUProc::~WUProc() {
-    if (dirty) {
-        OSForceFullRelaunch();
+    if (dirty) OSForceFullRelaunch();
+    if (!hbc || dirty) {
         SYSLaunchMenu();
         running = true;
         while (update());
@@ -67,11 +65,9 @@ bool WUProc::update() {
 }
 
 void WUProc::block_home() {
-    if (!hbc) OSEnableHomeButtonMenu(false);
     home = false;
 }
 
 void WUProc::release_home() {
-    if (!hbc) OSEnableHomeButtonMenu(true);
     home = true;
 }
