@@ -29,8 +29,6 @@ public:
     void swap();
 
 private:
-    void *buf[2];
-    std::uint32_t len[2];
 };
 
 #endif // SCREEN_HPP

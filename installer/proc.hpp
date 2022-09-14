@@ -15,14 +15,15 @@ public:
 
     void flag_dirty() { dirty = true; }
     bool is_running() { return running; }
-    bool is_dirty() { return dirty; }
-    bool is_hbl() { return hbc && !dirty; }
+    bool is_dirty() { return false; }
+    bool is_hbl() { return false; }
 
 private:
     bool hbc;
     bool running = true;
     bool dirty = false;
     bool home = true;
+    bool wantToExit = false;
 };
 
 class WUHomeLock {
