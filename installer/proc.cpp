@@ -22,8 +22,8 @@ namespace {
 
 WUProc::WUProc() {
     uint64_t titleID = OSGetTitleID();
-    hbc = (titleID == HBL_TITLE_ID          ) || (titleID = MII_MAKER_JPN_TITLE_ID) ||
-          (titleID == MII_MAKER_USA_TITLE_ID) || (titleID = MII_MAKER_EUR_TITLE_ID);
+    hbc = (titleID == HBL_TITLE_ID          ) || (titleID == MII_MAKER_JPN_TITLE_ID) ||
+          (titleID == MII_MAKER_USA_TITLE_ID) || (titleID == MII_MAKER_EUR_TITLE_ID);
 
     if (hbc) OSEnableHomeButtonMenu(false);
     ProcUIInitEx(+[](void *) -> std::uint32_t {
