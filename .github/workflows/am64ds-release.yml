@@ -6,7 +6,7 @@ jobs:
   release:
     name: AM64DS Release
     runs-on: ubuntu-latest
-    container: ghcr.io/lrflew/devkitppc:20211103
+    container: devkitpro/devkitppc:20220821
     steps:
       - name: Checkout AM64DS
         uses: actions/checkout@v2

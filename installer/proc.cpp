@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include <coreinit/foreground.h>
+#include <coreinit/launch.h>
 #include <coreinit/systeminfo.h>
 #include <coreinit/title.h>
 
@@ -11,9 +12,6 @@
 #include <sysapp/launch.h>
 
 #include "log.hpp"
-
-// Coreinit.rpl function, currently not in WUT headers
-extern "C" void OSForceFullRelaunch(void);
 
 namespace {
     constexpr std::uint64_t HBL_TITLE_ID           = 0x00050000'13374842;

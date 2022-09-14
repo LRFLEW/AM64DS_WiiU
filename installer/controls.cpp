@@ -25,7 +25,8 @@ Controls::Input Controls::get() const {
     VPADStatus vpad;
     VPADReadError verr = VPAD_READ_NO_SAMPLES;
     KPADStatus kpad[KMAX];
-    std::int32_t kerr[KMAX] = { -1, -1, -1, -1 };
+    KPADError kerr[KMAX] = { KPAD_ERROR_NO_SAMPLES, KPAD_ERROR_NO_SAMPLES,
+                             KPAD_ERROR_NO_SAMPLES, KPAD_ERROR_NO_SAMPLES };
     std::int32_t vcount, kcount[KMAX];
 
     vcount = VPADRead(VPAD_CHAN_0, &vpad, 1, &verr);
